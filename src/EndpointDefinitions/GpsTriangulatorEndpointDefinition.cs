@@ -1,3 +1,5 @@
+using EndpointDefinition;
+
 namespace GpsTriangulation.EndpointDefinitions;
 
 /// <summary>
@@ -9,6 +11,8 @@ namespace GpsTriangulation.EndpointDefinitions;
 /// </remarks>
 public class GpsTriangulatorEndpointDefinition : IEndpointDefinition
 {
+    private ILogger<GpsTriangulatorEndpointDefinition>? Logger;
+
     /// <summary>
     /// Defines the endpoints.
     /// </summary>
@@ -16,11 +20,19 @@ public class GpsTriangulatorEndpointDefinition : IEndpointDefinition
     /// The GPS triangulator endpoint is registered as a POST endpoint at /api/GpsTriangulate.
     /// </remarks>
     /// <param name="app">The app.</param>
-    /// <param name="evnt">The environment.</param>
-    public void DefineEndpoints(WebApplication app, IWebHostEnvironment evnt)
+    /// <param name="env">The environment.</param>
+    public void DefineEndpoints(WebApplication app, IWebHostEnvironment env)
     {
         app.MapPost("api/GpsTriangulate", GpsTriangulateAsync);
         app.MapPost("api/DistanceBetweenPoints", DistanceBetweenPointsAsync);
+
+        // Define different endpoints based on environment
+        if (env.IsDevelopment())
+        {
+            app.MapGet("/api/GpsTriangulate/debug", () => "Debug endpoint");
+            // Log configuration
+            Logger!.LogInformation("Configuration: {Config}", Config.GetConfig());
+        }
     }
 
     /// <summary>
@@ -29,6 +41,8 @@ public class GpsTriangulatorEndpointDefinition : IEndpointDefinition
     /// <param name="services">The service collection to which the services are added.</param>
     public void DefineServices(IServiceCollection services)
     {
+        Logger = services.BuildServiceProvider().GetRequiredService<ILogger<GpsTriangulatorEndpointDefinition>>();
+
         services.AddScoped<IGpsTriangulator, GpsTriangulator>();
     }
 
@@ -38,13 +52,13 @@ public class GpsTriangulatorEndpointDefinition : IEndpointDefinition
     /// <param name="gpsTriangulator">The GPS triangulator.</param>
     /// <param name="request">The GPS triangulator data request.</param>
     /// <returns>The result of the GPS triangulation.</returns>
-    private async Task<IResult> GpsTriangulateAsync(IGpsTriangulator gpsTriangulator, GpsTriangulatorDataRequest request)
+    private static async Task<IResult> GpsTriangulateAsync(IGpsTriangulator gpsTriangulator, GpsTriangulatorDataRequest request)
     {
         var errors = new List<string>();
-		if (!request.Validate(ref errors))
-		{
-			Results.BadRequest(string.Join("\n", errors!));
-		}
+        if (!request.Validate(ref errors))
+        {
+            Results.BadRequest(string.Join("\n", errors!));
+        }
 
         var matchedPairs = await gpsTriangulator.CalculateClosestStations(
             request.BaseData,
@@ -63,18 +77,18 @@ public class GpsTriangulatorEndpointDefinition : IEndpointDefinition
     /// <param name="gpsTriangulator">The GPS triangulator.</param>
     /// <param name="request">The distance between two points data request.</param>
     /// <returns>The result of the distance between the two points.</returns>
-    private async Task<IResult> DistanceBetweenPointsAsync(IGpsTriangulator gpsTriangulator, DistanceBetweenPointsDataRequest request)
+    private static async Task<IResult> DistanceBetweenPointsAsync(IGpsTriangulator gpsTriangulator, DistanceBetweenPointsDataRequest request)
     {
         var errors = new List<string>();
         if (!request.Validate(ref errors))
         {
             Results.BadRequest(string.Join("\n", errors!));
-        }    
+        }
 
         var distance = await gpsTriangulator.DistanceBetweenPoints(
             request.Point1.Latitude,
-            request.Point1.Longitude,        
-            request.Point2.Latitude,        
+            request.Point1.Longitude,
+            request.Point2.Latitude,
             request.Point2.Longitude);
         return Results.Ok(distance);
     }

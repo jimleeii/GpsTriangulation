@@ -1,7 +1,8 @@
+using EndpointDefinition;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddEndpointDefinitions(typeof(IEndpointDefinition));
+builder.Services.AddEndpointDefinitions(typeof(Program));
 builder.Services.ConfigureHttpJsonOptions(options =>
 {
     options.SerializerOptions.NumberHandling = JsonNumberHandling.AllowNamedFloatingPointLiterals;

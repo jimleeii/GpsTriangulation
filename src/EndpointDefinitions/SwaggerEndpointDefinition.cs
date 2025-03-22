@@ -1,5 +1,6 @@
-﻿using System.Reflection;
+﻿using EndpointDefinition;
 using Microsoft.OpenApi.Models;
+using System.Reflection;
 
 namespace GpsTriangulation.EndpointDefinitions;
 
@@ -9,24 +10,24 @@ namespace GpsTriangulation.EndpointDefinitions;
 public class SwaggerEndpointDefinition : IEndpointDefinition
 {
     private readonly string Title = Assembly.GetEntryAssembly()!.GetName().Name!;
-    private const string Version = "v1";
+    private const string Version = "v2";
     private ILogger<SwaggerEndpointDefinition>? Logger;
 
     /// <summary>
     /// Defines the endpoints.
     /// </summary>
     /// <param name="app">The app.</param>
-    /// <param name="evnt">The environment.</param>
-    public void DefineEndpoints(WebApplication app, IWebHostEnvironment evnt)
+    /// <param name="env">The environment.</param>
+    public void DefineEndpoints(WebApplication app, IWebHostEnvironment env)
     {
-        if (evnt.IsDevelopment())
-		{
-			app.UseDeveloperExceptionPage();
+        if (env.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
 
-			Logger!.LogInformation("Using Swagger UI");
-			app.UseSwagger();
-			app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", $"{Title} {Version}"));
-		}
+            Logger!.LogInformation("Using Swagger UI");
+            app.UseSwagger();
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v2/swagger.json", $"{Title} {Version}"));
+        }
     }
 
     /// <summary>
@@ -36,7 +37,7 @@ public class SwaggerEndpointDefinition : IEndpointDefinition
     public void DefineServices(IServiceCollection services)
     {
         Logger = services.BuildServiceProvider().GetRequiredService<ILogger<SwaggerEndpointDefinition>>();
-        
+
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(c =>
         {

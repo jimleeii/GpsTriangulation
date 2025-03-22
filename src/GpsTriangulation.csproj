@@ -10,8 +10,10 @@
     <Authors>Wei Li</Authors>
     <Product>GpsTriangulation</Product>
     <Description>A gpstriangulation project that uses minimal API structure.</Description>
+    <IsPackable>true</IsPackable>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="EndpointDefinition" Version="1.0.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 </Project>
