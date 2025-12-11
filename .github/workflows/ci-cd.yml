@@ -5,83 +5,196 @@ on:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
-  workflow_dispatch:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  SOLUTION_FILE: 'GpsTriangulation.sln'
 
 jobs:
   build-and-test:
     name: Build and Test
-    runs-on: windows-latest
-    
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      semver: ${{ steps.version.outputs.semver }}
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+      with:
+        fetch-depth: 0  # Fetch all history for version calculation
+
+    - name: Calculate Version
+      id: version
+      run: |
+        # Get commit count for build number
+        BUILD_NUMBER=$(git rev-list --count HEAD)
+        # Get short SHA
+        SHORT_SHA=$(git rev-parse --short HEAD)
+        # Get branch name
+        BRANCH_NAME=${GITHUB_REF#refs/heads/}
+
+        # Base version from csproj
+        BASE_VERSION="1.0.0"
+
+        if [ "$BRANCH_NAME" == "main" ]; then
+          # Production: 1.0.0.123
+          VERSION="${BASE_VERSION}.${BUILD_NUMBER}"
+          SEMVER="${BASE_VERSION}"
+        else
+          # Non-production: 1.0.0-dev.123+sha
+          VERSION="${BASE_VERSION}.${BUILD_NUMBER}"
+          SEMVER="${BASE_VERSION}-${BRANCH_NAME}.${BUILD_NUMBER}+${SHORT_SHA}"
+        fi
+
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "semver=${SEMVER}" >> $GITHUB_OUTPUT
+        echo "Build Version: ${VERSION}"
+        echo "Semantic Version: ${SEMVER}"
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-        
+
     - name: Restore dependencies
-      run: dotnet restore ${{ env.SOLUTION_FILE }}
-      
-    - name: Build solution
-      run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore
-      
+      run: dotnet restore GpsTriangulation.sln
+
+    - name: Build
+      run: dotnet build GpsTriangulation.sln --no-restore --configuration Release /p:Version=${{ steps.version.outputs.semver }} /p:FileVersion=${{ steps.version.outputs.version }} /p:AssemblyVersion=1.0.0
+
     - name: Run tests
-      run: dotnet test ${{ env.SOLUTION_FILE }} --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
-      
-    - name: Upload coverage to Codecov
+      run: dotnet test GpsTriangulation.sln --no-build --configuration Release --verbosity normal --collect:"XPlat Code Coverage" --logger "trx"
+
+    - name: Upload coverage reports
       uses: codecov/codecov-action@v4
       with:
         files: '**/coverage.cobertura.xml'
         fail_ci_if_error: false
 
-  docker-build:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    needs: build-and-test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-      
-    - name: Build Docker image
-      run: |
-        docker build -t gpstriangulation:${{ github.sha }} .
-        docker tag gpstriangulation:${{ github.sha }} gpstriangulation:latest
-        
-    - name: Test Docker image
-      run: |
-        docker run -d --name test-container -p 8080:8080 gpstriangulation:latest
-        sleep 10
-        curl --fail http://localhost:8080/health || exit 1
-        docker stop test-container
-        docker rm test-container
+    - name: Publish test results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: '**/TestResults/*.trx'
 
-  code-quality:
-    name: Code Quality Analysis
-    runs-on: windows-latest
-    
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: ${{ env.DOTNET_VERSION }}
-        
+
     - name: Restore dependencies
-      run: dotnet restore ${{ env.SOLUTION_FILE }}
-      
+      run: dotnet restore GpsTriangulation.sln
+
+    - name: Run security scan
+      run: |
+        dotnet list GpsTriangulation.sln package --vulnerable --include-transitive 2>&1 | tee security-scan.log
+        if grep -q "has the following vulnerable packages" security-scan.log; then
+          echo "Vulnerable packages found!"
+          exit 1
+        fi
+
+  docker-build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: [build-and-test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=raw,value=${{ needs.build-and-test.outputs.semver }}
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=ref,event=branch
+          type=sha,prefix={{branch}}-
+        labels: |
+          org.opencontainers.image.version=${{ needs.build-and-test.outputs.semver }}
+          org.opencontainers.image.revision=${{ github.sha }}
+
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # environment:
+    #   name: staging
+    #   url: https://staging.gpstriangulation.example.com
+
+    steps:
+    - name: Deploy to staging
+      run: |
+        echo "Deploy to staging environment"
+        # Add your deployment commands here
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [deploy-staging]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # environment:
+    #   name: production
+    #   url: https://gpstriangulation.example.com
+
+    steps:
+    - name: Deploy to production
+      run: |
+        echo "Deploy to production environment"
+        # Add your deployment commands here
+
+  code-quality:
+    name: Code Quality Analysis
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+
+    - name: Restore dependencies
+      run: dotnet restore GpsTriangulation.sln
+
     - name: Run dotnet format
-      run: dotnet format ${{ env.SOLUTION_FILE }} --verify-no-changes --verbosity diagnostic
+      run: dotnet format GpsTriangulation.sln --verify-no-changes --verbosity diagnostic
       continue-on-error: true
