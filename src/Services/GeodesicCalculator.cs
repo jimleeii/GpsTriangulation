@@ -20,8 +20,9 @@ public static class GeodesicCalculator
     /// <returns>A <see cref="GeodesicResult"/> containing the distance and bearings.</returns>
     /// <remarks>
     /// Based on the algorithm described at https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+    /// This is a synchronous CPU-bound operation.
     /// </remarks>
-    public static Task<GeodesicResult> CalculateVincenty(GeoPoint point1, GeoPoint point2, int maxIterations = 200)
+    public static GeodesicResult CalculateVincentySync(GeoPoint point1, GeoPoint point2, int maxIterations = 200)
     {
         var φ1 = ToRadians(point1.Latitude);
         var λ1 = ToRadians(point1.Longitude);
@@ -46,7 +47,7 @@ public static class GeodesicCalculator
             sinσ = Math.Sqrt((cosU2 * sinλ) * (cosU2 * sinλ) +
                     (cosU1 * sinU2 - sinU1 * cosU2 * cosλ) *
                     (cosU1 * sinU2 - sinU1 * cosU2 * cosλ));
-            if (sinσ == 0) return Task.FromResult(new GeodesicResult { Distance = 0 });
+            if (sinσ == 0) return new GeodesicResult { Distance = 0 };
 
             cosσ = sinU1 * sinU2 + cosU1 * cosU2 * cosλ;
             σ = Math.Atan2(sinσ, cosσ);
@@ -75,12 +76,28 @@ public static class GeodesicCalculator
         var α1 = Math.Atan2(cosU2 * Math.Sin(λ), cosU1 * sinU2 - sinU1 * cosU2 * Math.Cos(λ));
         var α2 = Math.Atan2(cosU1 * Math.Sin(λ), -sinU1 * cosU2 + cosU1 * sinU2 * Math.Cos(λ));
 
-        return Task.FromResult(new GeodesicResult
+        return new GeodesicResult
         {
             Distance = distance,
             InitialBearing = ToDegrees(α1),
             FinalBearing = ToDegrees(α2)
-        });
+        };
+    }
+
+    /// <summary>
+    /// Calculates the distance and initial/final bearings between two points using the Vincenty formula.
+    /// </summary>
+    /// <param name="point1">The first point.</param>
+    /// <param name="point2">The second point.</param>
+    /// <param name="maxIterations">The maximum number of iterations to run before giving up. Defaults to 200.</param>
+    /// <returns>A <see cref="Task{GeodesicResult}"/> containing the distance and bearings.</returns>
+    /// <remarks>
+    /// Async wrapper for the synchronous Vincenty calculation.
+    /// The calculation is CPU-bound and completes synchronously.
+    /// </remarks>
+    public static Task<GeodesicResult> CalculateVincenty(GeoPoint point1, GeoPoint point2, int maxIterations = 200)
+    {
+        return Task.FromResult(CalculateVincentySync(point1, point2, maxIterations));
     }
 
     /// <summary>

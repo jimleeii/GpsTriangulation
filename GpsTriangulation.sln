@@ -1,22 +1,28 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.1.11304.174 d18.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GpsTriangulation", "src\GpsTriangulation.csproj", "{A345F5EB-63CA-4CF6-A43D-66FF4C51242B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GpsTriangulation.Tests", "tests\GpsTriangulation.Tests\GpsTriangulation.Tests.csproj", "{BCB04EBB-6DF2-4DDF-AD05-BB10AB2515AF}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
-	GlobalSection(SolutionProperties) = preSolution
-		HideSolutionNode = FALSE
-	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A345F5EB-63CA-4CF6-A43D-66FF4C51242B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A345F5EB-63CA-4CF6-A43D-66FF4C51242B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A345F5EB-63CA-4CF6-A43D-66FF4C51242B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A345F5EB-63CA-4CF6-A43D-66FF4C51242B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BCB04EBB-6DF2-4DDF-AD05-BB10AB2515AF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BCB04EBB-6DF2-4DDF-AD05-BB10AB2515AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BCB04EBB-6DF2-4DDF-AD05-BB10AB2515AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BCB04EBB-6DF2-4DDF-AD05-BB10AB2515AF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
 	EndGlobalSection
 EndGlobal

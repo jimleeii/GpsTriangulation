@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  gpstriangulation:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gpstriangulation-api
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - API_KEYS=${API_KEYS:-your-api-key-here}
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - gpstriangulation-network
+
+networks:
+  gpstriangulation-network:
+    driver: bridge

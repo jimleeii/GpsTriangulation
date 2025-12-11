@@ -57,7 +57,7 @@ public class GpsTriangulatorEndpointDefinition : IEndpointDefinition
         var errors = new List<string>();
         if (!request.Validate(ref errors))
         {
-            Results.BadRequest(string.Join("\n", errors!));
+            return Results.BadRequest(string.Join("\n", errors!));
         }
 
         var matchedPairs = await gpsTriangulator.CalculateClosestStations(
@@ -82,7 +82,7 @@ public class GpsTriangulatorEndpointDefinition : IEndpointDefinition
         var errors = new List<string>();
         if (!request.Validate(ref errors))
         {
-            Results.BadRequest(string.Join("\n", errors!));
+            return Results.BadRequest(string.Join("\n", errors!));
         }
 
         var distance = await gpsTriangulator.DistanceBetweenPoints(

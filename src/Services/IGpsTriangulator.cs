@@ -1,5 +1,8 @@
 namespace GpsTriangulation.Services;
 
+/// <summary>
+/// Interface for GPS triangulation operations.
+/// </summary>
 public interface IGpsTriangulator
 {
     /// <summary>

@@ -76,14 +76,17 @@ public class GpsTriangulator : IGpsTriangulator
     /// <param name="lat2">The latitude of the second point in degrees.</param>
     /// <param name="lon2">The longitude of the second point in degrees.</param>
     /// <returns>A <see cref="Task{Double}"/> representing the asynchronous operation, with the distance between the two points in feet.</returns>
-    public async Task<double> DistanceBetweenPoints(double lat1, double lon1, double lat2, double lon2)
+    /// <remarks>
+    /// This is a CPU-bound calculation that completes synchronously.
+    /// </remarks>
+    public Task<double> DistanceBetweenPoints(double lat1, double lon1, double lat2, double lon2)
     {
         var point1 = new GeoPoint() { Latitude = lat1, Longitude = lon1 };
         var point2 = new GeoPoint() { Latitude = lat2, Longitude = lon2 };
-        var result = await GeodesicCalculator.CalculateVincenty(point1, point2);
+        var result = GeodesicCalculator.CalculateVincentySync(point1, point2);
 
         // Return the distance in feet.
-        return result.Distance * 3.28084;
+        return Task.FromResult(result.Distance * 3.28084);
     }
 
     /// <summary>

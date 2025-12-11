@@ -3,8 +3,6 @@ namespace GpsTriangulation.Models;
 /// <summary>
 /// Represents a geographical point with latitude and longitude.
 /// </summary>
-/// <param name="latitude">The latitude of the geographical point.</param>
-/// <param name="longitude">The longitude of the geographical point.</param>
 public record GeoPoint
 {
     /// <summary>

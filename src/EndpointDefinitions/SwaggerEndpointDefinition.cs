@@ -10,7 +10,7 @@ namespace GpsTriangulation.EndpointDefinitions;
 public class SwaggerEndpointDefinition : IEndpointDefinition
 {
     private readonly string Title = Assembly.GetEntryAssembly()!.GetName().Name!;
-    private const string Version = "v2";
+    private const string Version = "v1";
     private ILogger<SwaggerEndpointDefinition>? Logger;
 
     /// <summary>
@@ -26,7 +26,8 @@ public class SwaggerEndpointDefinition : IEndpointDefinition
 
             Logger!.LogInformation("Using Swagger UI");
             app.UseSwagger();
-            app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v2/swagger.json", $"{Title} {Version}"));
+            // Enable OpenAPI endpoint
+		    app.UseSwaggerUI(c => c.SwaggerEndpoint("/openapi/v1.json", $"{Title} {Version}"));
         }
     }
 
@@ -39,9 +40,10 @@ public class SwaggerEndpointDefinition : IEndpointDefinition
         Logger = services.BuildServiceProvider().GetRequiredService<ILogger<SwaggerEndpointDefinition>>();
 
         services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen(c =>
-        {
-            c.SwaggerDoc(Version, new OpenApiInfo { Title = Title, Version = Version });
-        });
+        // Add OpenAPI support
+		services.AddSwaggerGen(c =>
+		{
+			c.SwaggerDoc(Version, new OpenApiInfo { Title = Title, Version = Version });
+		});
     }
 }
