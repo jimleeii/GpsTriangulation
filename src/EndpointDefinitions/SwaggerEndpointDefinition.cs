@@ -27,7 +27,7 @@ public class SwaggerEndpointDefinition : IEndpointDefinition
             Logger!.LogInformation("Using Swagger UI");
             app.UseSwagger();
             // Enable OpenAPI endpoint
-		    app.UseSwaggerUI(c => c.SwaggerEndpoint("/openapi/v1.json", $"{Title} {Version}"));
+            app.UseSwaggerUI(c => c.SwaggerEndpoint("/openapi/v1.json", $"{Title} {Version}"));
         }
     }
 
@@ -41,9 +41,9 @@ public class SwaggerEndpointDefinition : IEndpointDefinition
 
         services.AddEndpointsApiExplorer();
         // Add OpenAPI support
-		services.AddSwaggerGen(c =>
-		{
-			c.SwaggerDoc(Version, new OpenApiInfo { Title = Title, Version = Version });
-		});
+        services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc(Version, new OpenApiInfo { Title = Title, Version = Version });
+        });
     }
 }

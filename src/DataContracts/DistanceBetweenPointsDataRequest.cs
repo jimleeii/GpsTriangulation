@@ -14,7 +14,7 @@ namespace GpsTriangulation.DataContracts;
 /// <param name="point2">The second geographical point.</param>
 public struct DistanceBetweenPointsDataRequest(GeoPoint point1, GeoPoint point2)
 {
-   /// <summary>
+    /// <summary>
     /// Gets or sets the first geographical point.
     /// </summary>
     public required GeoPoint Point1 { get; set; } = point1;
